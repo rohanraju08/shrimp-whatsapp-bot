@@ -2,7 +2,7 @@ import os, subprocess, tempfile, requests
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 from openai import OpenAI
-from langdetect import detect
+from langdetect import detect 
 
 app = Flask(__name__)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
