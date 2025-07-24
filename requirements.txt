@@ -3,5 +3,4 @@ Flask~=3.1.1
 twilio~=9.7.0
 requests
 langdetect
-pydub
 
