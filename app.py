@@ -1,26 +1,36 @@
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 import openai
-from googletrans import Translator
 import os
 
 app = Flask(__name__)
-
 openai.api_key = os.getenv("OPENAI_API_KEY")
-translator = Translator()
 
+# 🔁 Use GPT-4o to translate Telugu to English
+def translate_to_english(text):
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "Translate the following Telugu text to English. Only return the translated sentence."},
+            {"role": "user", "content": text}
+        ],
+        max_tokens=100
+    )
+    return response.choices[0].message["content"].strip()
+
+# 🧠 Main WhatsApp route
 @app.route("/whatsapp", methods=["POST"])
 def whatsapp_bot():
     incoming_msg = request.values.get('Body', '').strip()
 
-    # Translate to English
-    translated = translator.translate(incoming_msg, dest='en')
-    question_en = translated.text
+    # 1. Translate to English (using GPT)
+    question_en = translate_to_english(incoming_msg)
 
-    # Prompt GPT-4o
+    # 2. Prompt GPT-4o with expert instructions
     prompt = f"""
-You are a helpful, experienced shrimp aquaculture expert from Andhra Pradesh.
-Answer in friendly, simple Telugu that farmers can understand easily.
+You are a helpful and experienced shrimp farming expert from Andhra Pradesh ,  with immense knowdlege on vannami shrimp.
+Always answer in clear and simple Telugu so that local farmers understand.
+If the question is unclear or dangerous, ask for clarification or give safe advice.
 
 Question: {question_en}
 Answer:
@@ -32,12 +42,17 @@ Answer:
         max_tokens=500
     )
 
-    answer_te = response.choices[0].message["content"]
+    answer_te = response.choices[0].message["content"].strip()
 
-    # Send WhatsApp reply
+    # 3. Send WhatsApp reply
     reply = MessagingResponse()
     reply.message(answer_te)
     return str(reply)
+
+# 🔁 Render-compatible run config
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
